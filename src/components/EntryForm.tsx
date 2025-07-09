@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase';
 import { ScheduleEntry } from '@/lib/types';
 
+// Create a custom event for entry added
+const ENTRY_ADDED_EVENT = 'entryAdded';
+
 export default function EntryForm() {
   const [formData, setFormData] = useState<Partial<ScheduleEntry>>({
     title: '',
@@ -13,43 +16,72 @@ export default function EntryForm() {
     type: '',
     time_slot: '',
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
     
     // Form validation
     if (!formData.title || !formData.person || !formData.context || 
         !formData.day || !formData.type || !formData.time_slot) {
-      alert('Please fill all required fields');
+      setError('Please fill all required fields');
+      setIsSubmitting(false);
       return;
     }
     
-    const supabase = createClient();
-    const { error } = await supabase.from('schedule_entries').insert([formData]);
-    
-    if (error) {
-      console.error('Error adding entry:', error);
-      alert('Error adding entry');
-    } else {
-      // Reset form
-      setFormData({
-        title: '',
-        person: '',
-        context: '',
-        day: '',
-        type: '',
-        time_slot: '',
-      });
-      // Trigger page refresh to show new data
-      window.location.reload();
+    try {
+      const supabase = createClient();
+      const { error: supabaseError } = await supabase.from('schedule_entries').insert([formData]);
+      
+      if (supabaseError) {
+        console.error('Error adding entry:', supabaseError);
+        setError(supabaseError.message);
+      } else {
+        // Reset form
+        setFormData({
+          title: '',
+          person: '',
+          context: '',
+          day: '',
+          type: '',
+          time_slot: '',
+        });
+        
+        // Show success message briefly
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+        
+        // Dispatch custom event that ScheduleTable can listen for
+        const event = new CustomEvent(ENTRY_ADDED_EVENT);
+        window.dispatchEvent(event);
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="bg-gray-100 p-4 rounded-lg mb-6">
-      <div className="mb-2">
+      <div className="mb-2 flex justify-between items-center">
         <span className="text-purple-600">💠 Data embeds automatically - use Ctrl+S or "Save As" to save HTML with your current schedule</span>
+        {success && (
+          <span className="text-green-600 font-medium">✓ Entry added successfully!</span>
+        )}
       </div>
+      
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-2 mb-4">
+          <p>{error}</p>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div>
@@ -172,9 +204,24 @@ export default function EntryForm() {
         <div className="md:col-span-5">
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            disabled={isSubmitting}
+            className={`${
+              isSubmitting 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-blue-500 hover:bg-blue-700'
+            } text-white font-bold py-2 px-4 rounded flex items-center justify-center`}
           >
-            Add Entry
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Adding...
+              </>
+            ) : (
+              'Add Entry'
+            )}
           </button>
         </div>
       </form>
