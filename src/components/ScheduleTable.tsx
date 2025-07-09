@@ -56,9 +56,9 @@ export default function ScheduleTable({ initialData }: ScheduleTableProps) {
   const fetchEntries = async () => {
     setLoading(true);
     try {
-      const supabase = createClient();
-      const { data } = await supabase.from('schedule_entries').select('*');
-      if (data) setEntries(data);
+    const supabase = createClient();
+    const { data } = await supabase.from('schedule_entries').select('*');
+    if (data) setEntries(data);
     } catch (err) {
       console.error('Error fetching entries:', err);
     } finally {
@@ -117,36 +117,36 @@ export default function ScheduleTable({ initialData }: ScheduleTableProps) {
         <tbody>
           {persons.length > 0 ? (
             persons.map((person) => (
-              // For each person, create rows for each time slot
-              timeSlots.map((timeSlot, index) => (
-                <tr key={`${person}-${timeSlot}`}>
-                  {/* Person column - only show for the first time slot of each person */}
-                  {index === 0 ? (
-                    <td rowSpan={3} className="border border-gray-300 bg-gray-600 text-white p-2 text-center align-middle">{person}</td>
-                  ) : null}
-                  
-                  {/* Time slot column */}
-                  <td className={`border border-gray-300 ${
-                    timeSlot === 'Reminder' ? 'bg-gray-400' : 
-                    timeSlot === 'AM' ? 'bg-gray-400' : 'bg-gray-400'
-                  } p-2 text-center`}>
-                    {timeSlot}
-                  </td>
-                  
-                  {/* Day columns */}
-                  {days.map((day) => (
-                    <TableCell 
-                      key={`${person}-${timeSlot}-${day}`}
-                      entries={entries.filter(
-                        entry => 
-                          entry.person === person && 
-                          entry.time_slot === timeSlot && 
-                          entry.day === day
-                      )}
-                    />
-                  ))}
-                </tr>
-              ))
+            // For each person, create rows for each time slot
+            timeSlots.map((timeSlot, index) => (
+              <tr key={`${person}-${timeSlot}`}>
+                {/* Person column - only show for the first time slot of each person */}
+                {index === 0 ? (
+                  <td rowSpan={3} className="border border-gray-300 bg-gray-600 text-white p-2 text-center align-middle">{person}</td>
+                ) : null}
+                
+                {/* Time slot column */}
+                <td className={`border border-gray-300 ${
+                  timeSlot === 'Reminder' ? 'bg-gray-400' : 
+                  timeSlot === 'AM' ? 'bg-gray-400' : 'bg-gray-400'
+                } p-2 text-center`}>
+                  {timeSlot}
+                </td>
+                
+                {/* Day columns */}
+                {days.map((day) => (
+                  <TableCell 
+                    key={`${person}-${timeSlot}-${day}`}
+                    entries={entries.filter(
+                      entry => 
+                        entry.person === person && 
+                        entry.time_slot === timeSlot && 
+                        entry.day === day
+                    )}
+                  />
+                ))}
+              </tr>
+            ))
             ))
           ) : (
             <tr>
